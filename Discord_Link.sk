@@ -78,7 +78,7 @@ command /link:
 discord command link [<text>]:
     prefixes: !
     trigger:
-        if discord id of event-textchannel = "1335546678002057236":
+        if discord id of event-textchannel = "{@linkChannelID}":
             if arg-1 is set:
                 if {linked::%{code::%arg-1%}'s uuid%} isn't set:
                     if {code::%arg-1%} is set: 
