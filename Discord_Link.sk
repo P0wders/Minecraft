@@ -1,0 +1,129 @@
+# ///////////////////////////////////////////////////////////////////////
+# ////                                                               ////
+# ////       Before loading the skript & launching your server       ////
+# ////        You need to modify the options by the right one        ////
+# ////                                                               ////
+# ////   Bot Name, Bot Token, ID of the link channel, Discord Link   ////
+# ////                 Given When Linked, Guild ID                   ////
+# ////                                                               ////
+# ////        I f you have any questions please send me a msg        ////
+# ////                      Discord: p0wders_                        ////
+# ////                                                               ////
+# ///////////////////////////////////////////////////////////////////////
+
+options:
+    bot-name: # Bot Name
+    bot-token: # Bot Token
+    linkChannelID: # Channel ID to link (enter the link command)
+    discordLink: # Discord Invite Link
+    linkRoleID: # ID of the role the player will receive when linked
+    guildID: # ID of the guil (discord server)
+
+    prefix: &8[<##29b6f6>&lDISCORD&8]
+    serverName: # Name of your server
+    serverIP: # IP of your server
+
+define new bot named "{@bot-name}":
+    token: "{@bot-token}"
+    intents: default intents
+    policy: all
+    auto reconnect: true
+    compression: none
+
+    on ready:
+        send "&fBOT &8>> &7Loaded: &9%event-bot% &7- &a✔" to console
+
+command /linkinformation <player>:
+    permission: op
+    trigger:
+        send "", " {@prefix} &FAccount information <##29b6f6>%arg-1%", "", "  &7Linked Account: <##29b6f6>%{discordAccountSync::%arg-1's uuid%::Name}%", "  &7Account ID: <##29b6f6>%{discordAccountSync::%arg-1's uuid%::ID}%", "  &7Linked Date: <##29b6f6>%{discordAccountSync::%arg-1's uuid%::Date}%", "" to player
+
+command /unlink <player>:
+    permission: op
+    trigger:
+        if {linked::%arg-1's uuid%} is set:
+            set nickname of member with id "%{discordAccountSync::%arg-1's uuid%::ID}%" in guild with id "{@guildID}" to "%{discordAccountSync::%arg-1's uuid%::name}%"
+            delete {linked::%arg-1's uuid%}
+            clear {discordAccountSync::%arg-1's uuid%}
+            make console execute command "lp user %player% permission set linked false"
+
+on tab complete of "/unlink" or "/linkinformation":
+    loop {linked::*}:
+        add loop-value to {_linked::*}
+    set tab completion for position 1 to {_linked::*}
+
+command /link:
+    # cooldown: 25 seconds
+    trigger:
+        if {linked::%player's uuid%} isn't set:
+            set {_random} to a random integer between 100000 and 999999
+            set {code::%{_random}%} to player
+
+            send ""
+            set {_t} to text component from " &8[<##29b6f6>&lDISCORD&8] &fYour code is <##29b6f6>&n%{_random}%&r&f. Click to copy"
+            set click event of {_t} to a new click event to copy "!link %{_random}%" to clipboard
+            send component {_t} to player
+            send "", " &7By doing this you will automatically copy %nl% &7the command to your clipboard.", ""
+            wait 1 minute
+            if {code::%{_random}%} is set:
+                delete {code::%{_random}%}
+                send " {@prefix} &fYour code has expired, please try again."
+        else:
+            send "", " {@prefix} &fYou are already linked to a discord account.", "", "  &7Linked Account: <##29b6f6>%{discordAccountSync::%player's uuid%::Name}%", "  &7Account ID: <##29b6f6>%{discordAccountSync::%player's uuid%::ID}%", "  &7Linked Date: <##29b6f6>%{discordAccountSync::%player's uuid%::Date}%", ""
+
+discord command link [<text>]:
+    prefixes: !
+    trigger:
+        if discord id of event-textchannel = "1335546678002057236":
+            if arg-1 is set:
+                if {linked::%{code::%arg-1%}'s uuid%} isn't set:
+                    if {code::%arg-1%} is set: 
+                        set {linked::%{code::%arg-1%}'s uuid%} to {code::%arg-1%}
+                        make embed:
+                            set title of embed to "LINKED"
+                            set author of the embed to "{@serverName}"
+                            set DESCRIPTION of embed to " Congrats `%{code::%arg-1%}%`, You've %nl% linked your account to this discord"
+                            set embed color of the embed to light blue
+                            set thumbnail of embed to "https://cravatar.eu/head/%{code::%arg-1%}'s uuid%"
+                            set footer of embed to "{@serverIP}"
+                            set timestamp of embed to now
+                            purge event-message
+                        reply with last made embed
+
+                        set member nickname of event-member to "(✔) %{code::%arg-1%}%"
+
+                        set {_player} to {code::%arg-1%}'s uuid parsed as player
+                        send "" to  {_player}
+                        send " {@prefix} &fYou are now linked to <##29b6f6>%event-member%&f!" to {_player}
+                        send "" to  {_player}
+                        add {code::%arg-1%}'s uuid to {discordAccountSync::*}
+                        set {discordAccountSync::%{code::%arg-1%}'s uuid%::Name} to "%event-member%"
+                        set {discordAccountSync::%{code::%arg-1%}'s uuid%::ID} to "%discord id of event-member%"
+                        set {discordAccountSync::%{code::%arg-1%}'s uuid%::Date} to "%now%"
+                        add role with id "{@linkRoleID}" to roles of event-member
+
+                        make console execute command "lp user %{code::%arg-1%}% permission set linked true"
+                        delete {code::%arg-1%}
+                        stop
+                    else:
+                        make embed:
+                            set title of embed to "❌ Account Linking Error ❌"
+                            set embed color of the embed to red
+                            set description of embed to "The provided code is invalid, or non existent."
+                            set footer of embed to "Type /link ingame to link an account"
+                            set timestamp of embed to now
+                        reply with last made embed
+                        wait 2 seconds
+                        purge event-message
+                else:
+                    make embed:
+                        set title of embed to "❌ Account Linking Error ❌"
+                        set embed color of the embed to red
+                        set description of embed to "You can't link your account again?"
+                        set footer of embed to "Type /link ingame to link an account"
+                        set timestamp of embed to now
+                    reply with last made embed
+                    wait 2 seconds
+                    purge event-message
+            else:
+                reply with "Your code is invalid. Please provide a **valid code.**"
