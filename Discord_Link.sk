@@ -33,6 +33,10 @@ define new bot named "{@bot-name}":
     on ready:
         send "&fBOT &8>> &7Loaded: &9%event-bot% &7- &a✔" to console
 
+command /discord:
+    trigger:
+        send mini message from "", " {@prefix} &fJoin our discord server!", "", "  &fClick to join: <##29b6f6>&n<link:https://discord.gg/{@discordLink}>https://discord.gg/{@discordLink}", ""
+
 command /linkinformation <player>:
     permission: op
     trigger:
